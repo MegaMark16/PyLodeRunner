@@ -12,14 +12,19 @@ windowSurface = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT), 0, 32)
 pygame.display.set_caption('Input')
 
 # set up the colors
+YELLOW = (0, 255, 0)
+RED = (255, 0, 0)
+BLUE = (0, 0, 255)
 BLACK = (0, 0, 0)
-GREEN = (0, 255, 0)
 WHITE = (255, 255, 255)
+
+MOVESPEED = 5
 
 # set up the player and food data structure
 GOLD_HEIGHT = 10
 GOLD_WIDTH = 20
 FLOOR_HEIGHT = 5
+LADDER_WIDTH = 10
 player = pygame.Rect(300, 100, 10, 30)
 
 def load_floors(floor_data):
@@ -37,6 +42,21 @@ floor_data = [
 
 floors = load_floors(floor_data)
 
+def load_ladders(ladder_data):
+    ladders = []
+    for ladder in ladder_data:
+        ladders.append(pygame.Rect(ladder['left'], ladder['top'], LADDER_WIDTH, ladder['height']))
+    return ladders
+
+ladder_data = [
+    { 'height' : 150, 'left' : 300, 'top' : 150 },
+    { 'height' : 40, 'left' : 200, 'top' : 40 },
+    { 'height' : 260, 'left' : 80, 'top' : 40 },
+    { 'height' : 70, 'left' : 250, 'top' : 80 },
+]
+
+ladders = load_ladders(ladder_data)
+
 gold = []
 for i in range(random.randint(5, 10)):
     floor = random.choice(floors)
@@ -48,9 +68,6 @@ moveLeft = False
 moveRight = False
 moveUp = False
 moveDown = False
-
-MOVESPEED = 6
-
 
 # run the game loop
 while True:
@@ -92,25 +109,8 @@ while True:
         if event.type == MOUSEBUTTONUP:
             gold.append(pygame.Rect(event.pos[0], event.pos[1], GOLD_WIDTH, GOLD_HEIGHT))
 
-    #if gold >= NEWFOOD:
-        # add new food
-        #gold.append(pygame.Rect(random.randint(0, WINDOWWIDTH - GOLD_WIDTH), random.randint(0, WINDOWHEIGHT - GOLD_HEIGHT), GOLD_WIDTH, GOLD_HEIGHT))
-
     # draw the black background onto the surface
     windowSurface.fill(BLACK)
-
-    # move the player
-    if moveDown and player.bottom < WINDOWHEIGHT:
-        player.top += MOVESPEED
-    if moveUp and player.top > 0:
-        player.top -= MOVESPEED
-    if moveLeft and player.left > 0:
-        player.left -= MOVESPEED
-    if moveRight and player.right < WINDOWWIDTH:
-        player.right += MOVESPEED
-
-    # draw the player onto the surface
-    pygame.draw.rect(windowSurface, WHITE, player)
 
     # check if the player has intersected with any food squares.
     for brick in gold[:]:
@@ -119,11 +119,41 @@ while True:
 
     # draw the food
     for i in range(len(gold)):
-        pygame.draw.rect(windowSurface, GREEN, gold[i])
+        pygame.draw.rect(windowSurface, YELLOW, gold[i])
     
+    player_on_ladder = False
+    for ladder in ladders:
+        if player.colliderect(ladder):
+            player_on_ladder = True
+            if moveUp:
+                player.left = ladder.left
+        pygame.draw.rect(windowSurface, RED, ladder)
+        
+    player_standing = False
     for floor in floors:
         pygame.draw.rect(windowSurface, WHITE, floor)
+        if player.colliderect(floor):
+            player.top = floor.top - player.height + 1 
+            player_standing = True
+            
+    if player_standing or player_on_ladder:
+        # move the player
+        if moveDown:
+            player.top += MOVESPEED
+        if moveUp and player.top > 0 and player_on_ladder:
+            player.top -= MOVESPEED
+        if moveLeft and player.left > 0:
+            player.left -= MOVESPEED
+        if moveRight and player.right < WINDOWWIDTH:
+            player.right += MOVESPEED
+    else:
+        player.top += MOVESPEED
     
+    # draw the player onto the surface
+    pygame.draw.rect(windowSurface, WHITE, player)
+
     # draw the window onto the screen
     pygame.display.update()
     mainClock.tick(40)
+    
+
