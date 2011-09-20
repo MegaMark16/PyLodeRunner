@@ -20,12 +20,18 @@ WHITE = (255, 255, 255)
 
 MOVESPEED = 5
 
-# set up the player and food data structure
+# set up the player and gold data structure
 GOLD_HEIGHT = 10
 GOLD_WIDTH = 20
 FLOOR_HEIGHT = 5
 LADDER_WIDTH = 10
-player = pygame.Rect(300, 100, 10, 30)
+#player = pygame.Rect(300, 100, 10, 30)
+player_sprite = pygame.sprite.Sprite()
+player_sprite.image = pygame.image.load("player.png").convert()
+player_sprite.rect = player_sprite.image.get_rect()
+player = player_sprite.rect
+player.left = 200
+#windowSurface.blit(player_sprite.image, player)
 
 def load_floors(floor_data):
     floors = []
@@ -112,12 +118,12 @@ while True:
     # draw the black background onto the surface
     windowSurface.fill(BLACK)
 
-    # check if the player has intersected with any food squares.
+    # check if the player has intersected with any gold squares.
     for brick in gold[:]:
         if player.colliderect(brick):
             gold.remove(brick)
 
-    # draw the food
+    # draw the gold
     for i in range(len(gold)):
         pygame.draw.rect(windowSurface, YELLOW, gold[i])
     
@@ -125,20 +131,24 @@ while True:
     for ladder in ladders:
         if player.colliderect(ladder):
             player_on_ladder = True
-            if moveUp:
+            if moveUp or moveDown:
                 player.left = ladder.left
-        pygame.draw.rect(windowSurface, RED, ladder)
-        
+
     player_standing = False
     for floor in floors:
-        pygame.draw.rect(windowSurface, WHITE, floor)
-        if player.colliderect(floor):
+        if player.colliderect(floor) and not player_on_ladder:
             player.top = floor.top - player.height + 1 
             player_standing = True
-            
+
+    for floor in floors:
+        pygame.draw.rect(windowSurface, WHITE, floor)
+        
+    for ladder in ladders:
+        pygame.draw.rect(windowSurface, RED, ladder)
+        
     if player_standing or player_on_ladder:
         # move the player
-        if moveDown:
+        if moveDown and player_on_ladder:
             player.top += MOVESPEED
         if moveUp and player.top > 0 and player_on_ladder:
             player.top -= MOVESPEED
@@ -150,7 +160,8 @@ while True:
         player.top += MOVESPEED
     
     # draw the player onto the surface
-    pygame.draw.rect(windowSurface, WHITE, player)
+    #pygame.draw.sprite(windowSurface, WHITE, player)
+    windowSurface.blit(player_sprite.image, player)    
 
     # draw the window onto the screen
     pygame.display.update()
